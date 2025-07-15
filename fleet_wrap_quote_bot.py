@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from openai import OpenAI
 import os
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -31,19 +32,25 @@ def estimate_quote(vehicle_list):
 @app.route("/quote", methods=["POST"])
 def get_quote():
     user_input = request.json.get("message", "")
-    response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "Hello!"}
-    ]
-)
+
+    gpt_response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a helpful assistant. "
+                    "Always respond ONLY in JSON format like this: "
+                    '{"vehicles":[{"type":"sedan","wrap":"full","qty":2}, {"type":"truck","wrap":"partial","qty":1}]}'
+                )
+            },
+            {"role": "user", "content": user_input}
+        ]
+    )
 
     try:
-        content = gpt_response['choices'][0]['message']['content']
-        if content.lower().startswith("please"):
-            return jsonify({"success": False, "message": content})
-        structured_data = eval(content)
+        content = gpt_response.choices[0].message.content
+        structured_data = json.loads(content)
         vehicles = structured_data["vehicles"]
         quote_min, quote_max = estimate_quote(vehicles)
         return jsonify({
