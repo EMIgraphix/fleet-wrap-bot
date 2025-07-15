@@ -26,8 +26,8 @@ def estimate_quote(vehicle_list):
 @app.route("/quote", methods=["POST"])
 def get_quote():
     user_input = request.json.get("message", "")
-    response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",  # or "gpt-4" if you're using GPT-4
+    response = client.chat.completions.create(
+    model="gpt-4",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Hello!"}
