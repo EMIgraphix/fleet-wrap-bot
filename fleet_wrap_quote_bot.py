@@ -9,6 +9,7 @@ CORS(app)
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Price ranges by vehicle type and wrap coverage
 PRICE_TABLE = {
     'sedan': {'full': (2500, 4500), 'half': (1200, 2500), 'partial': (600, 1500)},
     'coupe': {'full': (2500, 5000), 'half': (1500, 3000), 'partial': (600, 1500)},
@@ -33,33 +34,37 @@ def estimate_quote(vehicle_list):
 def get_quote():
     user_input = request.json.get("message", "")
 
-    gpt_response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a helpful assistant. "
-                    "Always respond ONLY in JSON format like this: "
-                    '{"vehicles":[{"type":"sedan","wrap":"full","qty":2}, {"type":"truck","wrap":"partial","qty":1}]}'
-                )
-            },
-            {"role": "user", "content": user_input}
-        ]
-    )
-
     try:
-        content = gpt_response.choices[0].message.content
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a helpful assistant that extracts vehicle wrap details. "
+                        "Return only valid JSON in the following format:\n"
+                        "{ \"vehicles\": [ { \"type\": \"sedan\", \"wrap\": \"full\", \"qty\": 2 }, ... ] }"
+                    )
+                },
+                {"role": "user", "content": user_input}
+            ]
+        )
+
+        content = response.choices[0].message.content.strip()
+
+        # Try parsing response as JSON
         structured_data = json.loads(content)
         vehicles = structured_data["vehicles"]
         quote_min, quote_max = estimate_quote(vehicles)
+
         return jsonify({
             "success": True,
             "quote_range": f"${quote_min:,}–${quote_max:,}",
             "vehicles": vehicles
         })
+
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
