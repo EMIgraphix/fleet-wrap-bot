@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify
-import openai
+from openai import OpenAI
 import os
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
-openai.api_key = os.getenv("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")
 
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 PRICE_TABLE = {
     'sedan': {'full': (2500, 4500), 'half': (1200, 2500), 'partial': (600, 1500)},
     'coupe': {'full': (2500, 5000), 'half': (1500, 3000), 'partial': (600, 1500)},
