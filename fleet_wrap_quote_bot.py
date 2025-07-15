@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify
-from openai import OpenAI
+import openai
 import os
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai.api_key = "YOUR_KEY"
 PRICE_TABLE = {
     'sedan': {'full': (2500, 4500), 'half': (1200, 2500), 'partial': (600, 1500)},
     'coupe': {'full': (2500, 5000), 'half': (1500, 3000), 'partial': (600, 1500)},
@@ -30,14 +30,13 @@ def estimate_quote(vehicle_list):
 @app.route("/quote", methods=["POST"])
 def get_quote():
     user_input = request.json.get("message", "")
-    gpt_response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a professional quote assistant for a fleet vehicle wrapping company. Politely ask for missing details if the user doesn't include them: vehicle type, wrap coverage (Full, Half, Partial/Logo Only), and number of vehicles. Otherwise, return a JSON object like: {'vehicles': [{'type': 'truck', 'wrap': 'full', 'qty': 3}]}"},
-            {"role": "user", "content": user_input}
-        ],
-        temperature=0.2
-    )
+    response = openai.ChatCompletion.create(
+    model="gpt-3.5-turbo",  # or "gpt-4" if you're using GPT-4
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Hello!"}
+    ]
+)
 
     try:
         content = gpt_response['choices'][0]['message']['content']
