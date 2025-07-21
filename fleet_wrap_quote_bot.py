@@ -1,15 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from openai import OpenAI
 import os
-import json
 
 app = Flask(__name__)
 CORS(app)
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-# Price ranges by vehicle type and wrap coverage
 PRICE_TABLE = {
     'sedan': {'full': (2500, 4500), 'half': (1200, 2500), 'partial': (600, 1500)},
     'coupe': {'full': (2500, 5000), 'half': (1500, 3000), 'partial': (600, 1500)},
@@ -32,29 +27,11 @@ def estimate_quote(vehicle_list):
 
 @app.route("/quote", methods=["POST"])
 def get_quote():
-    user_input = request.json.get("message", "")
-
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a helpful assistant that extracts vehicle wrap details. "
-                        "Return only valid JSON in the following format:\n"
-                        "{ \"vehicles\": [ { \"type\": \"sedan\", \"wrap\": \"full\", \"qty\": 2 }, ... ] }"
-                    )
-                },
-                {"role": "user", "content": user_input}
-            ]
-        )
-
-        content = response.choices[0].message.content.strip()
-
-        # Try parsing response as JSON
-        structured_data = json.loads(content)
-        vehicles = structured_data["vehicles"]
+        # Parse structured vehicle list directly
+        msg = request.json.get("message", "")
+        data = eval(msg) if isinstance(msg, str) else msg
+        vehicles = data["vehicles"]
         quote_min, quote_max = estimate_quote(vehicles)
 
         return jsonify({
@@ -64,7 +41,7 @@ def get_quote():
         })
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
